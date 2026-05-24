@@ -1,0 +1,76 @@
+# Cod3x Agent Configuration
+
+# Gemini API Key (also settable via GEMINI_API_KEY env var)
+gemini_api_key: ""
+
+# Logging Configuration
+logging:
+  level: "INFO"
+  file: "cod3x.log"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+# Memory Configuration
+memory:
+  buffer_size: 100
+  buffer_ttl: 60
+  vector_storage_path: "vector_memory.pkl"
+  sqlite_path: "cod3x_memory.db"
+  use_gemini_embeddings: true
+
+# Google Services
+google:
+  credentials_file: "credentials.json"
+  spreadsheet_id: ""
+
+# Search API
+serpapi:
+  api_key: ""
+
+# Telegram Bot
+telegram:
+  bot_token: ""
+  chat_id: ""
+  channel_id: ""
+  allowed_users: []
+
+# Twitter/X API
+twitter:
+  api_key: ""
+  api_secret: ""
+  access_token: ""
+  access_secret: ""
+
+# Notifications
+notifications:
+  method: "desktop"
+  sound: true
+
+# Voice Interface
+voice:
+  wake_word: "hey cod3x"
+  language: "en-US"
+  speaker_voice: "default"
+  speaking_rate: 175
+  volume: 1.0
+
+# Command Execution
+execute:
+  sandbox_mode: true
+  working_directory: "./"
+  allowed_commands:
+    - "ls"
+    - "pwd"
+    - "echo"
+    - "date"
+    - "cat"
+    - "head"
+    - "tail"
+    - "grep"
+    - "python --version"
+    - "pip list"
+    - "git status"
+    - "whoami"
+
+# CLI Settings
+cli:
+  history_size: 100
