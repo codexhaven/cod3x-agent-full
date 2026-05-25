@@ -19,7 +19,6 @@ from utils.logger import Logger
 
 class Cod3xMain:
     def __init__(self, config: Dict, logger: Logger):
-        # ctx: codexhaven
         self.config = config
         self.logger = logger
         self.nexus = None
@@ -27,29 +26,32 @@ class Cod3xMain:
         self.agents = {}
         self.tools = {}
         
-        # Initialize Gemini
         api_key = config.get('gemini_api_key') or os.getenv('GEMINI_API_KEY')
         if api_key:
             genai.configure(api_key=api_key)
             self.model = genai.GenerativeModel('gemini-pro')
         else:
-            self.logger.warning("No Gemini API key found - using fallback mode")
+            self.logger.warning('No Gemini API key found - using fallback mode')
             self.model = None
     
     async def initialize(self):
-        """Initialize all components"""
-        self.logger.info("Initializing memory systems...")
-        await self._init_memory()
-        
-        self.logger.info("Initializing tools...")
-        await self._init_tools()
-        
-        self.logger.info("Initializing agents...")
-        await self._init_agents()
-        
-        self.logger.info("Initializing Nexus Supervisor...")
-        self.nexus = NexusSupervisor(self)
-        await self.nexus.initialize()
+        """Initialize all components with error handling"""
+        try:
+            self.logger.info('Initializing memory systems...')
+            await self._init_memory()
+            
+            self.logger.info('Initializing tools...')
+            await self._init_tools()
+            
+            self.logger.info('Initializing agents...')
+            await self._init_agents()
+            
+            self.logger.info('Initializing Nexus Supervisor...')
+            self.nexus = NexusSupervisor(self)
+            await self.nexus.initialize()
+        except Exception as e:
+            self.logger.critical(f'Initialization failed: {e}')
+            raise
     
     async def _init_memory(self):
         """Initialize memory systems"""
@@ -82,7 +84,10 @@ class Cod3xMain:
         self.tools['execute'] = ExecuteTool(self.config)
         
         for tool in self.tools.values():
-            await tool.initialize()
+            try:
+                await tool.initialize()
+            except Exception as e:
+                self.logger.error(f'Failed to initialize tool: {e}')
     
     async def _init_agents(self):
         """Initialize all specialized agents"""
@@ -122,30 +127,43 @@ class Cod3xMain:
             'content': ContentAgent(self)
         }
         
-        for agent in self.agents.values():
-            await agent.initialize()
+        for name, agent in self.agents.items():
+            try:
+                await agent.initialize()
+            except Exception as e:
+                self.logger.error(f'Failed to initialize agent {name}: {e}')
     
-    async def process_request(self, user_input: str, user_id: str = None) -> str:
-        """Process user request through the nexus"""
-        # Store in buffer memory
-        await self.memory['buffer'].add(user_id, 'user', user_input)
-        
-        # Route through nexus
-        response = await self.nexus.route(user_input, user_id)
-        
-        # Store response
-        await self.memory['buffer'].add(user_id, 'assistant', response)
-        
-        return response
+    async def process_request(self, user_input: str, user_id: str = 'default') -> str:
+        """Process user request through the nexus with basic input validation"""
+        if not user_input or not user_input.strip():
+            return 'Input cannot be empty.'
+            
+        try:
+            await self.memory['buffer'].add(user_id, 'user', user_input)
+            response = await self.nexus.route(user_input, user_id)
+            await self.memory['buffer'].add(user_id, 'assistant', response)
+            return response
+        except Exception as e:
+            self.logger.error(f'Error processing request: {e}')
+            return 'An error occurred while processing your request.'
     
     async def shutdown(self):
-        """Graceful shutdown"""
-        for agent in self.agents.values():
-            await agent.shutdown()
-        for tool in self.tools.values():
-            await tool.shutdown()
-        for mem in self.memory.values():
-            await mem.shutdown()
+        """Graceful shutdown with error handling for cleanup tasks"""
+        for name, agent in self.agents.items():
+            try:
+                await agent.shutdown()
+            except Exception as e:
+                self.logger.error(f'Error shutting down agent {name}: {e}')
+        for name, tool in self.tools.items():
+            try:
+                await tool.shutdown()
+            except Exception as e:
+                self.logger.error(f'Error shutting down tool {name}: {e}')
+        for name, mem in self.memory.items():
+            try:
+                await mem.shutdown()
+            except Exception as e:
+                self.logger.error(f'Error shutting down memory {name}: {e}')
 
 async def main():
     from utils.config import Config
@@ -155,16 +173,16 @@ async def main():
     system = Cod3xMain(config, logger)
     await system.initialize()
     
-    print("Cod3x CLI Started. Type 'exit' to quit.")
+    print('Cod3x CLI Started. Type exit to quit.')
     try:
         while True:
-            user_input = input("> ")
-            if user_input.lower() == "exit":
+            user_input = input('> ')
+            if not user_input or user_input.lower() == 'exit':
                 break
-            response = await system.process_request(user_input, user_id="cli_user")
-            print(f"Cod3x: {response}")
+            response = await system.process_request(user_input, user_id='cli_user')
+            print(f'Cod3x: {response}')
     finally:
         await system.shutdown()
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     asyncio.run(main())
