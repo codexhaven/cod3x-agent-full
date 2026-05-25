@@ -1,8 +1,13 @@
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 """
 Cod3x Main System - Central coordinator for all agents
 """
 
 import asyncio
+import os
 from typing import Dict, Any, Optional
 import google.generativeai as genai
 
@@ -14,6 +19,7 @@ from utils.logger import Logger
 
 class Cod3xMain:
     def __init__(self, config: Dict, logger: Logger):
+        # ctx: codexhaven
         self.config = config
         self.logger = logger
         self.nexus = None
@@ -140,3 +146,25 @@ class Cod3xMain:
             await tool.shutdown()
         for mem in self.memory.values():
             await mem.shutdown()
+
+async def main():
+    from utils.config import Config
+    config = Config().get_all()
+    logger = Logger(config)
+    
+    system = Cod3xMain(config, logger)
+    await system.initialize()
+    
+    print("Cod3x CLI Started. Type 'exit' to quit.")
+    try:
+        while True:
+            user_input = input("> ")
+            if user_input.lower() == "exit":
+                break
+            response = await system.process_request(user_input, user_id="cli_user")
+            print(f"Cod3x: {response}")
+    finally:
+        await system.shutdown()
+
+if __name__ == "__main__":
+    asyncio.run(main())

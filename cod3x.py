@@ -1,67 +1,179 @@
 #!/usr/bin/env python3
 """
-Cod3x-Agent: Complete Multi-Agent System
-Main entry point for the entire system
+Cod3x Main System - Central coordinator for all agents
+Fixed: Handle missing google.generativeai gracefully
 """
 
 import asyncio
-import argparse
-import sys
 import os
-from pathlib import Path
+from typing import Dict, Any, Optional
 
-# Add project root to path
-sys.path.insert(0, str(Path(__file__).parent))
+# Handle Gemini import gracefully
+try:
+    import google.generativeai as genai
+    GEMINI_AVAILABLE = True
+except ImportError:
+    GEMINI_AVAILABLE = False
+    genai = None
 
-from cod3x_main import Cod3xMain
-from utils.config import Config
-from utils.logger import setup_logger
+from nexus_supervisor import NexusSupervisor
+from memory.buffer_memory import BufferMemory
+from memory.vector_memory import VectorMemory
+from memory.sqlite_memory import SQLiteMemory
+from utils.logger import Logger
 
-async def main():
-    parser = argparse.ArgumentParser(description='Cod3x Multi-Agent System')
-    parser.add_argument('--mode', choices=['telegram', 'cli', 'voice'], 
-                       default='cli', help='Interface mode')
-    parser.add_argument('--config', default='config.yaml', 
-                       help='Configuration file path')
-    parser.add_argument('--debug', action='store_true', 
-                       help='Enable debug mode')
-    
-    args = parser.parse_args()
-    
-    # Setup
-    config = Config(args.config)
-    logger = setup_logger(config.get('logging', {}), args.debug)
-    
-    logger.info("🚀 Initializing Cod3x-Agent System...")
-    
-    try:
-        # Initialize main system
-        cod3x = Cod3xMain(config, logger)
-        await cod3x.initialize()
+class Cod3xMain:
+    def __init__(self, config: Dict, logger: Logger):
+        self.config = config
+        self.logger = logger
+        self.nexus = None
+        self.memory = {}
+        self.agents = {}
+        self.tools = {}
         
-        logger.info("✅ Cod3x-Agent System initialized successfully")
-        
-        # Launch interface
-        if args.mode == 'telegram':
-            from interface.telegram_bot import TelegramInterface
-            interface = TelegramInterface(cod3x, config)
-        elif args.mode == 'voice':
-            from interface.voice_listener import VoiceInterface
-            interface = VoiceInterface(cod3x, config)
+        # Initialize Gemini if available
+        api_key = config.get('gemini_api_key') or os.getenv('GEMINI_API_KEY')
+        if GEMINI_AVAILABLE and api_key:
+            try:
+                genai.configure(api_key=api_key)
+                self.model = genai.GenerativeModel('gemini-pro')
+                self.logger.info("✅ Gemini API connected")
+            except Exception as e:
+                self.logger.warning(f"Gemini init failed: {e}")
+                self.model = None
         else:
-            from interface.cli_chat import CLIInterface
-            interface = CLIInterface(cod3x, config)
+            if not GEMINI_AVAILABLE:
+                self.logger.warning("⚠️  google-generativeai not installed. Run: pip install google-generativeai")
+            if not api_key:
+                self.logger.warning("⚠️  No Gemini API key. Get free key at https://makersuite.google.com/app/apikey")
+            self.model = None
+    
+    async def initialize(self):
+        """Initialize all components"""
+        print("🔧 Initializing Cod3x System...")
         
-        await interface.run()
+        print("  📦 Memory systems...")
+        await self._init_memory()
         
-    except KeyboardInterrupt:
-        logger.info("🛑 Shutting down Cod3x-Agent...")
-    except Exception as e:
-        logger.error(f"❌ Fatal error: {e}")
-        raise
-    finally:
-        await cod3x.shutdown()
-        logger.info("👋 Goodbye!")
-
-if __name__ == "__main__":
-    asyncio.run(main())
+        print("  🔧 Tools...")
+        await self._init_tools()
+        
+        print("  🤖 Agents...")
+        await self._init_agents()
+        
+        print("  🧠 Nexus Supervisor...")
+        self.nexus = NexusSupervisor(self)
+        await self.nexus.initialize()
+        
+        print("✅ System ready!")
+    
+    async def _init_memory(self):
+        """Initialize memory systems"""
+        self.memory['buffer'] = BufferMemory(self.config.get('memory', {}))
+        self.memory['vector'] = VectorMemory(self.config.get('memory', {}))
+        self.memory['sqlite'] = SQLiteMemory(self.config.get('memory', {}))
+        
+        await self.memory['buffer'].initialize()
+        await self.memory['vector'].initialize()
+        await self.memory['sqlite'].initialize()
+    
+    async def _init_tools(self):
+        """Initialize all tools"""
+        from tools.calendar_tool import CalendarTool
+        from tools.gmail_tool import GmailTool
+        from tools.sheets_tool import SheetsTool
+        from tools.serpapi_tool import SerpAPITool
+        from tools.drive_tool import DriveTool
+        from tools.telegram_tool import TelegramTool
+        from tools.notify_tool import NotifyTool
+        from tools.execute_tool import ExecuteTool
+        
+        self.tools['calendar'] = CalendarTool(self.config)
+        self.tools['gmail'] = GmailTool(self.config)
+        self.tools['sheets'] = SheetsTool(self.config)
+        self.tools['serpapi'] = SerpAPITool(self.config)
+        self.tools['drive'] = DriveTool(self.config)
+        self.tools['telegram'] = TelegramTool(self.config)
+        self.tools['notify'] = NotifyTool(self.config)
+        self.tools['execute'] = ExecuteTool(self.config)
+        
+        for name, tool in self.tools.items():
+            try:
+                await tool.initialize()
+            except Exception as e:
+                self.logger.warning(f"Tool {name} init skipped: {e}")
+    
+    async def _init_agents(self):
+        """Initialize all specialized agents"""
+        from agents.calendar_agent import CalendarAgent
+        from agents.tasks_agent import TasksAgent
+        from agents.docs_agent import DocsAgent
+        from agents.contacts_agent import ContactsAgent
+        from agents.email_agent import EmailAgent
+        from agents.telegram_agent import TelegramAgent
+        from agents.twitter_agent import TwitterAgent
+        from agents.expenses_agent import ExpensesAgent
+        from agents.travel_agent import TravelAgent
+        from agents.meals_agent import MealsAgent
+        from agents.search_agent import SearchAgent
+        from agents.research_agent import ResearchAgent
+        from agents.crypto_agent import CryptoAgent
+        from agents.social_agent import SocialAgent
+        from agents.image_agent import ImageAgent
+        from agents.content_agent import ContentAgent
+        
+        self.agents = {
+            'calendar': CalendarAgent(self),
+            'tasks': TasksAgent(self),
+            'docs': DocsAgent(self),
+            'contacts': ContactsAgent(self),
+            'email': EmailAgent(self),
+            'telegram': TelegramAgent(self),
+            'twitter': TwitterAgent(self),
+            'expenses': ExpensesAgent(self),
+            'travel': TravelAgent(self),
+            'meals': MealsAgent(self),
+            'search': SearchAgent(self),
+            'research': ResearchAgent(self),
+            'crypto': CryptoAgent(self),
+            'social': SocialAgent(self),
+            'image': ImageAgent(self),
+            'content': ContentAgent(self)
+        }
+        
+        for name, agent in self.agents.items():
+            try:
+                await agent.initialize()
+            except Exception as e:
+                self.logger.warning(f"Agent {name} init skipped: {e}")
+    
+    async def process_request(self, user_input: str, user_id: str = None) -> str:
+        """Process user request through the nexus"""
+        # Store in buffer memory
+        await self.memory['buffer'].add(user_id, 'user', user_input)
+        
+        # Route through nexus
+        response = await self.nexus.route(user_input, user_id)
+        
+        # Store response
+        await self.memory['buffer'].add(user_id, 'assistant', response)
+        
+        return response
+    
+    async def shutdown(self):
+        """Graceful shutdown"""
+        for agent in self.agents.values():
+            try:
+                await agent.shutdown()
+            except:
+                pass
+        for tool in self.tools.values():
+            try:
+                await tool.shutdown()
+            except:
+                pass
+        for mem in self.memory.values():
+            try:
+                await mem.shutdown()
+            except:
+                pass
