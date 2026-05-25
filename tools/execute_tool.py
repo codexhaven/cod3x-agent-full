@@ -1,3 +1,7 @@
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 """
 Execute Tool - Command execution and system operations
 """
@@ -11,6 +15,7 @@ from pathlib import Path
 
 class ExecuteTool:
     def __init__(self, config: Dict):
+        # ctx: codexhaven
         self.config = config
         self.allowed_commands = config.get('execute', {}).get('allowed_commands', [
             'ls', 'dir', 'pwd', 'echo', 'date', 'time',
@@ -45,34 +50,27 @@ class ExecuteTool:
             cwd = working_dir or self.working_directory
             
             # Execute command
-            process = await asyncio.create_subprocess_shell(
+            result = subprocess.run(
                 command,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-                cwd=cwd
+                shell=True,
+                capture_output=True,
+                text=True,
+                cwd=cwd,
+                timeout=timeout
             )
             
-            try:
-                stdout, stderr = await asyncio.wait_for(
-                    process.communicate(), timeout=timeout
-                )
-            except asyncio.TimeoutError:
-                process.kill()
-                return {
-                    "status": "timeout",
-                    "command": command,
-                    "message": f"Command timed out after {timeout} seconds"
-                }
-            
-            stdout_text = stdout.decode('utf-8', errors='replace') if stdout else ""
-            stderr_text = stderr.decode('utf-8', errors='replace') if stderr else ""
-            
             return {
-                "status": "success" if process.returncode == 0 else "error",
+                "status": "success" if result.returncode == 0 else "error",
                 "command": command,
-                "returncode": process.returncode,
-                "stdout": stdout_text[:2000],  # Limit output
-                "stderr": stderr_text[:1000]
+                "returncode": result.returncode,
+                "stdout": result.stdout[:2000],  # Limit output
+                "stderr": result.stderr[:1000]
+            }
+        except subprocess.TimeoutExpired:
+            return {
+                "status": "timeout",
+                "command": command,
+                "message": f"Command timed out after {timeout} seconds"
             }
         except Exception as e:
             return {"status": "error", "command": command, "message": str(e)}
