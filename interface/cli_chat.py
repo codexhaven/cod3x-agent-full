@@ -211,23 +211,33 @@ You can also just chat naturally! The agent will understand your requests.
     
     async def _export_data(self, args: list):
         """Export specific data"""
-        export_type = args[0] if args else 'all'
+        export_type = args[0].lower() if args else 'all'
         
-        if export_type in ['tasks', 'all']:
-            tasks = await self.cod3x.memory['sqlite'].get_tasks(self.user_id)
-            filename = f"tasks_export_{datetime.now().strftime('%Y%m%d')}.json"
-            import json
-            with open(filename, 'w') as f:
-                json.dump(tasks, f, indent=2)
-            self._print_response(f"✅ Tasks exported to {filename}")
-        
-        if export_type in ['contacts', 'all']:
-            contacts = await self.cod3x.memory['sqlite'].get_contacts(self.user_id)
-            filename = f"contacts_export_{datetime.now().strftime('%Y%m%d')}.json"
-            import json
-            with open(filename, 'w') as f:
-                json.dump(contacts, f, indent=2)
-            self._print_response(f"✅ Contacts exported to {filename}")
+        try:
+            if export_type in ['tasks', 'all']:
+                if hasattr(self.cod3x, 'memory') and 'sqlite' in self.cod3x.memory:
+                    tasks = await self.cod3x.memory['sqlite'].get_tasks(self.user_id)
+                    filename = f"tasks_export_{datetime.now().strftime('%Y%m%d')}.json"
+                    import json
+                    with open(filename, 'w') as f:
+                        json.dump(tasks, f, indent=2)
+                    self._print_response(f"✅ Tasks exported to {filename}")
+                else:
+                    self._print_response("❌ SQLite memory not initialized.")
+            
+            if export_type in ['contacts', 'all']:
+                if hasattr(self.cod3x, 'memory') and 'sqlite' in self.cod3x.memory:
+                    contacts = await self.cod3x.memory['sqlite'].get_contacts(self.user_id)
+                    filename = f"contacts_export_{datetime.now().strftime('%Y%m%d')}.json"
+                    import json
+                    with open(filename, 'w') as f:
+                        json.dump(contacts, f, indent=2)
+                    self._print_response(f"✅ Contacts exported to {filename}")
+                else:
+                    self._print_response("❌ SQLite memory not initialized.")
+        except Exception as e:
+            self.logger.error(f"Export error: {e}")
+            self._print_response(f"❌ Export failed: {e}")
     
     async def _show_status(self, args: list):
         """Show system status"""
@@ -241,10 +251,11 @@ You can also just chat naturally! The agent will understand your requests.
         """
         self._print_response(status)
     
-    async def _list_agents(self, args: list):
+    def _list_agents(self, args: list):
         """List active agents"""
-        agent_list = "\n".join([f"  • {name.title()}" for name in self.cod3x.agents.keys()])
-        response = f"🤖 Active Agents:\n{agent_list}"
+        agent_names = sorted(list(self.cod3x.agents.keys()))
+        agent_list = "\n".join([f"  • {name.title()}" for name in agent_names])
+        response = f"🤖 Active Agents:\n{agent_list}" if agent_names else "No agents active."
         self._print_response(response)
     
     async def _switch_mode(self, args: list):
