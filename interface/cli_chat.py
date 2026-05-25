@@ -1,3 +1,7 @@
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 """
 CLI Chat Interface - Command-line interaction
 """
@@ -257,3 +261,15 @@ You can also just chat naturally! The agent will understand your requests.
     async def shutdown(self):
         """Cleanup"""
         self.running = False
+
+if __name__ == "__main__":
+    # ctx: codexhaven
+    from cod3x_main import Cod3xMain
+    
+    async def start_cli():
+        app = Cod3xMain()
+        await app.initialize()
+        interface = CLIInterface(app, app.config)
+        await interface.run()
+        
+    asyncio.run(start_cli())
