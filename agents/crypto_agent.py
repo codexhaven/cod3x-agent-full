@@ -1,3 +1,4 @@
+from llm_proxy import generate as llm_generate
 """
 Crypto Agent - Cryptocurrency prices, analysis, and tracking
 """
@@ -12,7 +13,7 @@ class CryptoAgent:
         self.cod3x = cod3x
         self.config = cod3x.config
         self.logger = cod3x.logger
-        self.model = cod3x.model
+        from utils.free_ai import get_ai; self.model = get_ai()
         self.search_tool = cod3x.tools.get('serpapi')
     
     async def initialize(self):
@@ -125,15 +126,15 @@ class CryptoAgent:
             try:
                 prompt = f"What is the current approximate price of {coin} in USD? Return just the price and 24h change."
                 response = await asyncio.to_thread(
-                    self.model.generate_content, prompt
+                    self.model._call, prompt
                 )
                 # Parse response for price
                 import re
-                price_match = re.search(r'\$?(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)', response.text)
+                price_match = re.search(r'\$?(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)', response)
                 if price_match:
                     price_data['price'] = float(price_match.group(1).replace(',', ''))
                 
-                change_match = re.search(r'([+-]?\d+\.?\d*)%', response.text)
+                change_match = re.search(r'([+-]?\d+\.?\d*)%', response)
                 if change_match:
                     price_data['change_24h'] = float(change_match.group(1))
             except:
@@ -212,9 +213,9 @@ class CryptoAgent:
             try:
                 prompt = "Provide a brief crypto market overview: total market cap, BTC dominance, top movers, and market sentiment."
                 response = await asyncio.to_thread(
-                    self.model.generate_content, prompt
+                    self.model._call, prompt
                 )
-                return f"📊 **Crypto Market Overview**\n\n{response.text}"
+                return f"📊 **Crypto Market Overview**\n\n{response}"
             except:
                 pass
         
@@ -237,9 +238,9 @@ class CryptoAgent:
             try:
                 prompt = f"Analyze recent price trends and provide a brief outlook for {coin}. Include support/resistance levels if possible."
                 response = await asyncio.to_thread(
-                    self.model.generate_content, prompt
+                    self.model._call, prompt
                 )
-                return f"📈 **{coin.title()} Analysis**\n\n{response.text}"
+                return f"📈 **{coin.title()} Analysis**\n\n{response}"
             except:
                 pass
         
@@ -251,9 +252,9 @@ class CryptoAgent:
             try:
                 prompt = "What are the top 3 crypto news stories right now? Provide brief summaries."
                 response = await asyncio.to_thread(
-                    self.model.generate_content, prompt
+                    self.model._call, prompt
                 )
-                return f"📰 **Crypto News**\n\n{response.text}"
+                return f"📰 **Crypto News**\n\n{response}"
             except:
                 pass
         

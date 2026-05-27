@@ -1,3 +1,4 @@
+from llm_proxy import generate as llm_generate
 """
 Search Agent - Web search and information retrieval
 """
@@ -11,7 +12,7 @@ class SearchAgent:
         self.cod3x = cod3x
         self.config = cod3x.config
         self.logger = cod3x.logger
-        self.model = cod3x.model
+        from utils.free_ai import get_ai; self.model = get_ai()
         self.search_tool = cod3x.tools.get('serpapi')
     
     async def initialize(self):
@@ -66,9 +67,9 @@ class SearchAgent:
             
             try:
                 response = await asyncio.to_thread(
-                    self.model.generate_content, prompt
+                    self.model._call, prompt
                 )
-                results.append(response.text)
+                results.append(response)
             except:
                 pass
         
@@ -107,9 +108,9 @@ class SearchAgent:
             
             try:
                 response = await asyncio.to_thread(
-                    self.model.generate_content, prompt
+                    self.model._call, prompt
                 )
-                return f"📰 **News: {query}**\n\n{response.text}"
+                return f"📰 **News: {query}**\n\n{response}"
             except:
                 pass
         
@@ -150,9 +151,9 @@ class SearchAgent:
             
             try:
                 response = await asyncio.to_thread(
-                    self.model.generate_content, prompt
+                    self.model._call, prompt
                 )
-                return f"📚 **Definition: {term}**\n\n{response.text}"
+                return f"📚 **Definition: {term}**\n\n{response}"
             except:
                 pass
         
@@ -163,9 +164,9 @@ class SearchAgent:
         if self.model:
             try:
                 response = await asyncio.to_thread(
-                    self.model.generate_content, request
+                    self.model._call, request
                 )
-                return f"💡 {response.text[:1000]}"
+                return f"💡 {response[:1000]}"
             except:
                 pass
         

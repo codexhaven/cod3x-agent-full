@@ -1,3 +1,4 @@
+from llm_proxy import generate as llm_generate
 """
 Social Agent - Social media content creation and scheduling
 """
@@ -12,7 +13,7 @@ class SocialAgent:
         self.cod3x = cod3x
         self.config = cod3x.config
         self.logger = cod3x.logger
-        self.model = cod3x.model
+        from utils.free_ai import get_ai; self.model = get_ai()
     
     async def initialize(self):
         self.logger.info("Social Agent initialized")
@@ -64,19 +65,19 @@ class SocialAgent:
             
             try:
                 response = await asyncio.to_thread(
-                    self.model.generate_content, prompt
+                    self.model._call, prompt
                 )
                 
                 # Store post
                 await self.cod3x.memory['sqlite'].store_social_post(user_id, {
                     'platform': platform,
-                    'content': response.text,
+                    'content': response,
                     'topic': topic,
                     'status': 'draft',
                     'created_at': datetime.now().isoformat()
                 })
                 
-                return f"📱 **{platform.title()} Post Created**\n\n{response.text}"
+                return f"📱 **{platform.title()} Post Created**\n\n{response}"
             except:
                 pass
         
@@ -146,9 +147,9 @@ class SocialAgent:
             
             try:
                 response = await asyncio.to_thread(
-                    self.model.generate_content, prompt
+                    self.model._call, prompt
                 )
-                return f"#️⃣ **Hashtag Suggestions for '{topic}'**\n\n{response.text}"
+                return f"#️⃣ **Hashtag Suggestions for '{topic}'**\n\n{response}"
             except:
                 pass
         
@@ -163,9 +164,9 @@ class SocialAgent:
             
             try:
                 response = await asyncio.to_thread(
-                    self.model.generate_content, prompt
+                    self.model._call, prompt
                 )
-                return f"✍️ **Caption Options**\n\n{response.text}"
+                return f"✍️ **Caption Options**\n\n{response}"
             except:
                 pass
         

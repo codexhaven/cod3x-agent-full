@@ -1,3 +1,4 @@
+from llm_proxy import generate as llm_generate
 """
 Telegram Agent - Telegram messaging and channel management
 """
@@ -11,7 +12,7 @@ class TelegramAgent:
         self.cod3x = cod3x
         self.config = cod3x.config
         self.logger = cod3x.logger
-        self.model = cod3x.model
+        from utils.free_ai import get_ai; self.model = get_ai()
         self.tool = cod3x.tools.get('telegram')
     
     async def initialize(self):
@@ -63,9 +64,9 @@ class TelegramAgent:
             
             try:
                 response = await asyncio.to_thread(
-                    self.model.generate_content, prompt
+                    self.model._call, prompt
                 )
-                return json.loads(response.text)
+                return json.loads(response)
             except:
                 pass
         

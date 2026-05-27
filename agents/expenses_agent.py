@@ -1,3 +1,4 @@
+from llm_proxy import generate as llm_generate
 """
 Expenses Agent - Expense tracking and budget management
 """
@@ -12,7 +13,7 @@ class ExpensesAgent:
         self.cod3x = cod3x
         self.config = cod3x.config
         self.logger = cod3x.logger
-        self.model = cod3x.model
+        from utils.free_ai import get_ai; self.model = get_ai()
         self.sheets_tool = cod3x.tools.get('sheets')
     
     async def initialize(self):
@@ -78,9 +79,9 @@ class ExpensesAgent:
             
             try:
                 response = await asyncio.to_thread(
-                    self.model.generate_content, prompt
+                    self.model._call, prompt
                 )
-                return json.loads(response.text)
+                return json.loads(response)
             except:
                 pass
         
@@ -126,9 +127,9 @@ class ExpensesAgent:
             
             try:
                 response = await asyncio.to_thread(
-                    self.model.generate_content, prompt
+                    self.model._call, prompt
                 )
-                return response.text.strip()
+                return response.strip()
             except:
                 pass
         

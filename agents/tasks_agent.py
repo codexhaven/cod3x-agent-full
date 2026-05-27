@@ -1,3 +1,4 @@
+from llm_proxy import generate as llm_generate
 """
 Tasks Agent - Manages to-do lists and task tracking
 """
@@ -12,7 +13,7 @@ class TasksAgent:
         self.cod3x = cod3x
         self.config = cod3x.config
         self.logger = cod3x.logger
-        self.model = cod3x.model
+        from utils.free_ai import get_ai; self.model = get_ai()
     
     async def initialize(self):
         self.logger.info("Tasks Agent initialized")
@@ -72,9 +73,9 @@ class TasksAgent:
             
             try:
                 response = await asyncio.to_thread(
-                    self.model.generate_content, prompt
+                    self.model._call, prompt
                 )
-                return json.loads(response.text)
+                return json.loads(response)
             except:
                 pass
         

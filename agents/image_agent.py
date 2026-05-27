@@ -1,3 +1,4 @@
+from llm_proxy import generate as llm_generate
 """
 Image Agent - Image generation and description
 """
@@ -11,7 +12,7 @@ class ImageAgent:
         self.cod3x = cod3x
         self.config = cod3x.config
         self.logger = cod3x.logger
-        self.model = cod3x.model
+        from utils.free_ai import get_ai; self.model = get_ai()
     
     async def initialize(self):
         self.logger.info("Image Agent initialized")
@@ -59,10 +60,10 @@ class ImageAgent:
                 Add: art style, lighting, color palette, composition, mood, and technical specifications."""
                 
                 response = await asyncio.to_thread(
-                    self.model.generate_content, enhance_prompt
+                    self.model._call, enhance_prompt
                 )
                 
-                enhanced_prompt = response.text
+                enhanced_prompt = response
                 
                 return f"🎨 **Image Prompt Generated**\n\nOriginal: {prompt}\n\nEnhanced: {enhanced_prompt}\n\n💡 Use this prompt with DALL-E, Midjourney, or Stable Diffusion"
             except:
@@ -90,9 +91,9 @@ class ImageAgent:
             try:
                 prompt = f"Provide a detailed artistic description of: {request}"
                 response = await asyncio.to_thread(
-                    self.model.generate_content, prompt
+                    self.model._call, prompt
                 )
-                return f"🖼️ **Image Description**\n\n{response.text}"
+                return f"🖼️ **Image Description**\n\n{response}"
             except:
                 pass
         

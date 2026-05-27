@@ -1,3 +1,4 @@
+from llm_proxy import generate as llm_generate
 """
 Twitter Agent - Twitter/X posting and monitoring
 """
@@ -12,7 +13,7 @@ class TwitterAgent:
         self.cod3x = cod3x
         self.config = cod3x.config
         self.logger = cod3x.logger
-        self.model = cod3x.model
+        from utils.free_ai import get_ai; self.model = get_ai()
     
     async def initialize(self):
         self.logger.info("Twitter Agent initialized")
@@ -48,9 +49,9 @@ class TwitterAgent:
             if self.model:
                 prompt = f"Shorten this to under 280 characters while keeping key message:\n\n{tweet_text}"
                 response = await asyncio.to_thread(
-                    self.model.generate_content, prompt
+                    self.model._call, prompt
                 )
-                tweet_text = response.text[:280]
+                tweet_text = response[:280]
             else:
                 tweet_text = tweet_text[:277] + "..."
         
@@ -82,9 +83,9 @@ class TwitterAgent:
         if not text and self.model:
             prompt = f"Generate an engaging tweet about: {request}"
             response = await asyncio.to_thread(
-                self.model.generate_content, prompt
+                self.model._call, prompt
             )
-            text = response.text
+            text = response
         
         return text or "Hello Twitter! #Cod3x"
     
@@ -137,10 +138,10 @@ class TwitterAgent:
             
             prompt = f"Create a Twitter thread of 3-5 tweets about: {topic}\n\nFormat each tweet separated by ---"
             response = await asyncio.to_thread(
-                self.model.generate_content, prompt
+                self.model._call, prompt
             )
             
-            tweets = [t.strip() for t in response.text.split('---') if t.strip()]
+            tweets = [t.strip() for t in response.split('---') if t.strip()]
             
             # Store thread
             for i, tweet in enumerate(tweets):

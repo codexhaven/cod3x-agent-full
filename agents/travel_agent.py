@@ -1,3 +1,4 @@
+from llm_proxy import generate as llm_generate
 """
 Travel Agent - Trip planning and travel recommendations
 """
@@ -12,7 +13,7 @@ class TravelAgent:
         self.cod3x = cod3x
         self.config = cod3x.config
         self.logger = cod3x.logger
-        self.model = cod3x.model
+        from utils.free_ai import get_ai; self.model = get_ai()
         self.search_tool = cod3x.tools.get('serpapi')
     
     async def initialize(self):
@@ -66,7 +67,7 @@ class TravelAgent:
             
             try:
                 response_text = await asyncio.to_thread(
-                    self.model.generate_content, prompt
+                    self.model._call, prompt
                 )
                 response += response_text.text
             except:
@@ -82,9 +83,9 @@ class TravelAgent:
             
             try:
                 response = await asyncio.to_thread(
-                    self.model.generate_content, prompt
+                    self.model._call, prompt
                 )
-                return json.loads(response.text)
+                return json.loads(response)
             except:
                 pass
         
@@ -184,9 +185,9 @@ class TravelAgent:
             Include morning, afternoon, and evening activities with estimated costs."""
             
             response = await asyncio.to_thread(
-                self.model.generate_content, prompt
+                self.model._call, prompt
             )
-            return f"📋 **Itinerary for {trip.get('destination')}:**\n\n{response.text}"
+            return f"📋 **Itinerary for {trip.get('destination')}:**\n\n{response}"
         
         return f"📋 Itinerary generation for {trip.get('destination')} requires Gemini API."
     
@@ -202,9 +203,9 @@ class TravelAgent:
         if destination and self.model:
             prompt = f"List top attractions and activities in {destination} with brief descriptions."
             response = await asyncio.to_thread(
-                self.model.generate_content, prompt
+                self.model._call, prompt
             )
-            return f"🎯 **Top Attractions in {destination}:**\n\n{response.text}"
+            return f"🎯 **Top Attractions in {destination}:**\n\n{response}"
         
         return "🎯 Tell me your destination for personalized recommendations!"
     

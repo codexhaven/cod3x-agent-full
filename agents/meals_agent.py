@@ -1,3 +1,4 @@
+from llm_proxy import generate as llm_generate
 """
 Meals Agent - Recipe suggestions, meal planning, and nutrition
 """
@@ -12,7 +13,7 @@ class MealsAgent:
         self.cod3x = cod3x
         self.config = cod3x.config
         self.logger = cod3x.logger
-        self.model = cod3x.model
+        from utils.free_ai import get_ai; self.model = get_ai()
     
     async def initialize(self):
         self.logger.info("Meals Agent initialized")
@@ -52,7 +53,7 @@ class MealsAgent:
             
             try:
                 response = await asyncio.to_thread(
-                    self.model.generate_content, prompt
+                    self.model._call, prompt
                 )
                 
                 # Store recipe in memory
@@ -61,7 +62,7 @@ class MealsAgent:
                     'date': datetime.now().isoformat()
                 })
                 
-                return f"🍳 **Recipe: {dish.title()}**\n\n{response.text}"
+                return f"🍳 **Recipe: {dish.title()}**\n\n{response}"
             except:
                 pass
         
@@ -93,17 +94,17 @@ class MealsAgent:
             
             try:
                 response = await asyncio.to_thread(
-                    self.model.generate_content, prompt
+                    self.model._call, prompt
                 )
                 
                 # Store meal plan
                 await self.cod3x.memory['sqlite'].store_meal_plan(user_id, {
                     'preferences': preferences,
-                    'plan': response.text,
+                    'plan': response,
                     'created_at': datetime.now().isoformat()
                 })
                 
-                return f"📅 **Your {preferences.get('days', 7)}-Day Meal Plan**\n\n{response.text}"
+                return f"📅 **Your {preferences.get('days', 7)}-Day Meal Plan**\n\n{response}"
             except:
                 pass
         
@@ -153,9 +154,9 @@ class MealsAgent:
             
             try:
                 response = await asyncio.to_thread(
-                    self.model.generate_content, prompt
+                    self.model._call, prompt
                 )
-                return f"🍽️ **Meal Suggestions**\n\n{response.text}"
+                return f"🍽️ **Meal Suggestions**\n\n{response}"
             except:
                 pass
         
@@ -174,9 +175,9 @@ class MealsAgent:
             
             try:
                 response = await asyncio.to_thread(
-                    self.model.generate_content, prompt
+                    self.model._call, prompt
                 )
-                return f"📊 **Nutrition Info: {food.title()}**\n\n{response.text}"
+                return f"📊 **Nutrition Info: {food.title()}**\n\n{response}"
             except:
                 pass
         
@@ -194,9 +195,9 @@ class MealsAgent:
             
             try:
                 response = await asyncio.to_thread(
-                    self.model.generate_content, prompt
+                    self.model._call, prompt
                 )
-                return f"🛒 **Shopping List**\n\n{response.text}"
+                return f"🛒 **Shopping List**\n\n{response}"
             except:
                 pass
         

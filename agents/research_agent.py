@@ -1,3 +1,4 @@
+from llm_proxy import generate as llm_generate
 """
 Research Agent - Deep research and analysis
 """
@@ -12,7 +13,7 @@ class ResearchAgent:
         self.cod3x = cod3x
         self.config = cod3x.config
         self.logger = cod3x.logger
-        self.model = cod3x.model
+        from utils.free_ai import get_ai; self.model = get_ai()
         self.search_tool = cod3x.tools.get('serpapi')
     
     async def initialize(self):
@@ -74,7 +75,7 @@ class ResearchAgent:
             
             try:
                 analysis = await asyncio.to_thread(
-                    self.model.generate_content, prompt
+                    self.model._call, prompt
                 )
                 sources.append(("AI Analysis", analysis.text))
             except:
@@ -130,9 +131,9 @@ class ResearchAgent:
             
             try:
                 response = await asyncio.to_thread(
-                    self.model.generate_content, prompt
+                    self.model._call, prompt
                 )
-                return f"⚖️ **Comparison: {' vs '.join(items)}**\n\n{response.text}"
+                return f"⚖️ **Comparison: {' vs '.join(items)}**\n\n{response}"
             except:
                 pass
         
@@ -168,9 +169,9 @@ class ResearchAgent:
             
             try:
                 response = await asyncio.to_thread(
-                    self.model.generate_content, prompt
+                    self.model._call, prompt
                 )
-                return f"📝 **Summary:**\n\n{response.text}"
+                return f"📝 **Summary:**\n\n{response}"
             except:
                 pass
         
@@ -191,9 +192,9 @@ class ResearchAgent:
             
             try:
                 response = await asyncio.to_thread(
-                    self.model.generate_content, prompt
+                    self.model._call, prompt
                 )
-                return f"📈 **Trend Analysis: {topic}**\n\n{response.text}"
+                return f"📈 **Trend Analysis: {topic}**\n\n{response}"
             except:
                 pass
         
@@ -216,17 +217,17 @@ class ResearchAgent:
             
             try:
                 response = await asyncio.to_thread(
-                    self.model.generate_content, prompt
+                    self.model._call, prompt
                 )
                 
                 # Store report
                 await self.cod3x.memory['sqlite'].store_document(user_id, {
                     'title': f"Report: {topic}",
-                    'content': response.text,
+                    'content': response,
                     'type': 'report'
                 })
                 
-                return f"📊 **Report Generated: {topic}**\n\n{response.text[:1000]}...\n\n(Full report saved to documents)"
+                return f"📊 **Report Generated: {topic}**\n\n{response[:1000]}...\n\n(Full report saved to documents)"
             except:
                 pass
         

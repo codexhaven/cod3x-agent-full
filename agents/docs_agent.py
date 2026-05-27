@@ -1,3 +1,4 @@
+from llm_proxy import generate as llm_generate
 """
 Docs Agent - Document creation, management, and search
 """
@@ -11,7 +12,7 @@ class DocsAgent:
         self.cod3x = cod3x
         self.config = cod3x.config
         self.logger = cod3x.logger
-        self.model = cod3x.model
+        from utils.free_ai import get_ai; self.model = get_ai()
         self.tool = cod3x.tools.get('drive')
     
     async def initialize(self):
@@ -47,9 +48,9 @@ class DocsAgent:
         if self.model and not doc_details.get('content'):
             prompt = f"Write a {doc_details.get('type', 'document')} about: {doc_details.get('title', '')}\nTopic: {doc_details.get('topic', '')}"
             response = await asyncio.to_thread(
-                self.model.generate_content, prompt
+                self.model._call, prompt
             )
-            doc_details['content'] = response.text
+            doc_details['content'] = response
         
         # Store document
         doc_id = await self.cod3x.memory['sqlite'].store_document(user_id, doc_details)
@@ -72,9 +73,9 @@ class DocsAgent:
             
             try:
                 response = await asyncio.to_thread(
-                    self.model.generate_content, prompt
+                    self.model._call, prompt
                 )
-                return json.loads(response.text)
+                return json.loads(response)
             except:
                 pass
         
@@ -148,9 +149,9 @@ class DocsAgent:
             if docs and docs[0].get('content'):
                 prompt = f"Summarize this document in 3-5 bullet points:\n\n{docs[0]['content']}"
                 response = await asyncio.to_thread(
-                    self.model.generate_content, prompt
+                    self.model._call, prompt
                 )
-                return f"📄 **Summary of '{docs[0]['title']}':**\n\n{response.text}"
+                return f"📄 **Summary of '{docs[0]['title']}':**\n\n{response}"
         
         return "I couldn't summarize that document. Please make sure it exists and has content."
     
