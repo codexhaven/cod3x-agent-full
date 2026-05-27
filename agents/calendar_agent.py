@@ -60,7 +60,7 @@ class CalendarAgent:
     
     async def _extract_intent(self, request: str) -> Dict:
         """Extract calendar intent from natural language"""
-        if self.model:
+        if False:
             prompt = self.intent_prompt.format(request=request)
             response = await asyncio.to_thread(
                 self.model._call, prompt
@@ -118,7 +118,7 @@ class CalendarAgent:
     
     async def _create_event(self, event: Dict, user_id: str) -> str:
         """Create calendar event"""
-        if self.tool:
+        if self.tool and False:
             try:
                 result = await self.tool.create_event(
                     summary=event['title'],

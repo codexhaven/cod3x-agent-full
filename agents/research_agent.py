@@ -77,7 +77,7 @@ class ResearchAgent:
                 analysis = await asyncio.to_thread(
                     self.model._call, prompt
                 )
-                sources.append(("AI Analysis", analysis.text))
+                sources.append(("AI Analysis", analysis))
             except:
                 pass
         

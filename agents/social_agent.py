@@ -23,7 +23,7 @@ class SocialAgent:
         text_lower = request.lower()
         
         try:
-            if any(kw in text_lower for kw in ['create post', 'social post', 'write post']):
+            if any(kw in text_lower for kw in ['create post', 'social post', 'write post', 'post to', 'tweet', 'publish']):
                 return await self._create_post(request, user_id)
             elif any(kw in text_lower for kw in ['schedule', 'plan post']):
                 return await self._schedule_post(request, user_id)

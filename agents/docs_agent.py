@@ -47,7 +47,7 @@ class DocsAgent:
         # Generate content if needed
         if self.model and not doc_details.get('content'):
             prompt = f"Write a {doc_details.get('type', 'document')} about: {doc_details.get('title', '')}\nTopic: {doc_details.get('topic', '')}"
-            response = await asyncio.to_thread(
+            response = llm_generate(prompt)  # was: await asyncio.to_thread(
                 self.model._call, prompt
             )
             doc_details['content'] = response
@@ -72,7 +72,7 @@ class DocsAgent:
             Return JSON: {{"title": "doc title", "type": "document|spreadsheet|presentation", "topic": "main topic", "content": "generated content if specified"}}"""
             
             try:
-                response = await asyncio.to_thread(
+                response = llm_generate(prompt)  # was: await asyncio.to_thread(
                     self.model._call, prompt
                 )
                 return json.loads(response)
@@ -148,7 +148,7 @@ class DocsAgent:
             
             if docs and docs[0].get('content'):
                 prompt = f"Summarize this document in 3-5 bullet points:\n\n{docs[0]['content']}"
-                response = await asyncio.to_thread(
+                response = llm_generate(prompt)  # was: await asyncio.to_thread(
                     self.model._call, prompt
                 )
                 return f"📄 **Summary of '{docs[0]['title']}':**\n\n{response}"

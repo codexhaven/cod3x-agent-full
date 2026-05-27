@@ -22,7 +22,7 @@ class ImageAgent:
         text_lower = request.lower()
         
         try:
-            if any(kw in text_lower for kw in ['generate image', 'create image', 'make image', 'draw']):
+            if any(kw in text_lower for kw in ['generate image', 'create image', 'make image', 'draw', 'generate', 'cartoon', 'image of', 'picture of']):
                 return await self._generate_image(request, user_id)
             elif any(kw in text_lower for kw in ['describe image', 'what is in this', 'image analysis']):
                 return await self._describe_image(request, user_id)
